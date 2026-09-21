@@ -4,6 +4,7 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.sisas.landminesclient.connection.dto.Request;
 import com.sisas.landminesclient.connection.dto.Response;
+import com.sisas.landminesclient.connection.dto.SelectCellResponse;
 import com.sisas.landminesclient.model.Cell;
 
 import java.io.*;
@@ -47,9 +48,30 @@ public class ServerConnector {
   }
 
 
-  public Cell[][] selectCell(int i, int j) {
+  public SelectCellResponse selectCell(int i, int j) {
     try (Socket hostSocket = new Socket(host, port); BufferedReader reader = new BufferedReader(new InputStreamReader(hostSocket.getInputStream())); BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(hostSocket.getOutputStream()))) {
       Request req = new Request("SELECT_CELL", Map.of("i", String.valueOf(i), "j", String.valueOf(j)));
+      String json = gson.toJson(req);
+      writer.write(json);
+      writer.newLine();
+      writer.flush();
+
+      String line = reader.readLine();
+      Response res = gson.fromJson(line, Response.class);
+      Object boardData = res.data.get("board");
+      Cell[][] board = gson.fromJson(gson.toJson(boardData), boardType);
+      boolean win = Boolean.TRUE.equals(res.data.get("win"));
+      boolean gameEnd = Boolean.TRUE.equals(res.data.get("gameEnd"));
+      return new SelectCellResponse(board, win, gameEnd);
+    } catch (IOException e) {
+      e.printStackTrace();
+    }
+    return null;
+  }
+
+  public Cell[][] markCell(int i, int j) {
+    try (Socket hostSocket = new Socket(host, port); BufferedReader reader = new BufferedReader(new InputStreamReader(hostSocket.getInputStream())); BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(hostSocket.getOutputStream()))) {
+      Request req = new Request("MARK_CELL", Map.of("i", String.valueOf(i), "j", String.valueOf(j)));
       String json = gson.toJson(req);
       writer.write(json);
       writer.newLine();

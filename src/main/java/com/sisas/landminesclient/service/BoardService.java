@@ -1,6 +1,7 @@
 package com.sisas.landminesclient.service;
 
 import com.sisas.landminesclient.connection.ServerConnector;
+import com.sisas.landminesclient.connection.dto.SelectCellResponse;
 import com.sisas.landminesclient.model.BoardGame;
 import com.sisas.landminesclient.model.Cell;
 
@@ -29,8 +30,10 @@ public class BoardService {
     boardGame.setMines(mines);
   }
 
-  public void selectCell(int row, int column) {
-    updateBoard(serverConnector.selectCell(row, column));
+  public SelectCellResponse selectCell(int row, int column) {
+    SelectCellResponse response = serverConnector.selectCell(row, column);
+    updateBoard(response.getBoard());
+    return response;
   }
 
   public void showAllBoard() {
@@ -38,7 +41,7 @@ public class BoardService {
   }
 
   public void markCell(int row, int column) {
-    boardGame.markCell(row, column);
+    updateBoard(serverConnector.markCell(row, column));
   }
 
   public void printBoard() {
@@ -64,10 +67,26 @@ public class BoardService {
         System.out.println("use the format: <operation> <i> <j>");
         System.out.println("operation 1: select cell, operation 2: mark/unmark cell");
         System.out.println("type u to update the board, or -1 -1 to exit");
+        System.out.println("type i <rows> <columns> <mines> to reset the board");
+        System.out.println("type s to reveal everything and end the game");
 
         String command = scanner.next();
         if (command.equalsIgnoreCase("u")) {
           refreshBoard();
+          continue;
+        }
+        if (command.equalsIgnoreCase("i")) {
+          int newRows = scanner.nextInt();
+          int newColumns = scanner.nextInt();
+          int newMines = scanner.nextInt();
+          initBoard(newRows, newColumns, newMines);
+          continue;
+        }
+        if (command.equalsIgnoreCase("s")) {
+          showAllBoard();
+          printBoard();
+          System.out.println("Board revealed. Game ended.");
+          playing = false;
           continue;
         }
 
@@ -89,7 +108,15 @@ public class BoardService {
           if (operation == 2) {
             markCell(row, column);
           } else if (operation == 1) {
-            selectCell(row, column);
+            SelectCellResponse response = selectCell(row, column);
+            if (response.isGameEnd()) {
+              if (response.isWin()) {
+                System.out.println("You win, congratulations!");
+              } else {
+                System.out.println("Game over. You hit a mine.");
+              }
+              playing = false;
+            }
           } else {
             System.out.println("Unknown operation: " + operation);
           }

@@ -135,6 +135,9 @@ public class BoardGame {
   }
 
   public void setBoard(Cell[][] board) {
+    mines = 0;
+    for (Cell[] row : board) for (Cell c : row)
+      if (c.isLandMine()) mines++;
     this.board = board;
   }
 
